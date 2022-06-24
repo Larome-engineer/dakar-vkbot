@@ -65,8 +65,17 @@ async def answer_keyboard(msg: Message):
     keyboard = (
         Keyboard(inline=True)
         .add(Text("Верно"), KeyboardButtonColor.POSITIVE)
-        .add(Text("Не верно"), KeyboardButtonColor.NEGATIVE)
+        .add(Text("Неверно"), KeyboardButtonColor.NEGATIVE)
     )
     await msg.answer("Все верно?", keyboard=keyboard)
+
+
+async def check_of_correct(msg: Message):
+    keyboard = (
+        Keyboard(inline=True)
+        .add(Text("Проверить заявку"), KeyboardButtonColor.POSITIVE)
+    )
+    await msg.answer("Проверьте заявку на корректность", keyboard=keyboard)
+
 
 

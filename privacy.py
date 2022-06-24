@@ -1,4 +1,2 @@
-token = " "
-phone = " "
-
-
+token = ""
+phone = ""

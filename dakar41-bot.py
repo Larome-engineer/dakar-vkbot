@@ -7,22 +7,10 @@ from dictionary import *
 from privacy import token
 from vkbottle.bot import Bot, Message
 from vkbottle import GroupTypes, GroupEventType, VKAPIError, CtxStorage
-from vkbottle import BaseStateGroup
 
-ctx = CtxStorage()
+
 bot = Bot(token=token)
 bot.labeler.vbml_ignore_case = True
-
-
-class RegData(BaseStateGroup):
-    SIZE = 0
-    BRAND = 1
-    STATE = 2
-    SEASON = 3
-    STUDDED = 4
-    TYPE = 5
-    PHONE = 6
-    USERNAME = 7
 
 
 @bot.on.private_message(text=["верно", "не верно"])
@@ -78,103 +66,28 @@ async def info_handler(msg: Message):
     await msg.answer(f"📦 Доставка и оплата 📦\n\n{delivery_pay_txt}")
 
 
-@bot.on.private_message(lev="Оставить заявку")
+@bot.on.private_message(text="Оставить заявку")
 async def reg_handler(msg: Message):
-    await bot.state_dispenser.set(msg.peer_id, RegData.SIZE)
-    return about_size
-
-
-@bot.on.private_message(state=RegData.SIZE)
-async def size_handler(msg: Message):
-    ctx.set("size", msg.text)
-    await bot.state_dispenser.set(msg.peer_id, RegData.BRAND, something=1)
-    return about_brand
-
-
-@bot.on.private_message(state=RegData.BRAND)
-async def brand_handler(msg: Message):
-    ctx.set("brand", msg.text)
-    await bot.state_dispenser.set(msg.peer_id, RegData.STATE)
-    state = await bus_condition(msg)
-    return state
-
-
-@bot.on.private_message(state=RegData.STATE)
-async def state_handler(msg: Message):
-    if msg.text == "Б/У" or msg.text == "Новое":
-        ctx.set("state", msg.text)
-        await bot.state_dispenser.set(msg.peer_id, RegData.SEASON)
-        season = await tire_season(msg)
-        return season
-    else:
-        await msg.answer("Выберите корректный параметр из выше представленных")
-
-
-@bot.on.private_message(state=RegData.SEASON)
-async def season_handler(msg: Message):
-    if msg.text == "Летняя" or msg.text == "Зимняя" or msg.text == "Грязь МТ" or msg.text == "Грязь АТ":
-        ctx.set("season", msg.text)
-        await bot.state_dispenser.set(msg.peer_id, RegData.STUDDED)
-        studded = await tire_studding(msg)
-        return studded
-    else:
-        await msg.answer("Выберите корректный параметр из выше представленных")
-
-
-@bot.on.private_message(state=RegData.STUDDED)
-async def std_handler(msg: Message):
-    if msg.text == "Шипы" or msg.text == "Без шипов":
-        ctx.set("studded", msg.text)
-        await bot.state_dispenser.set(msg.peer_id, RegData.TYPE)
-        types = await tire_type(msg)
-        return types
-    else:
-        await msg.answer("Выберите корректный параметр из выше представленных")
-
-
-@bot.on.private_message(state=RegData.TYPE)
-async def phone_handler(msg: Message):
-    if msg.text == "Обычная" or msg.text == "Грузовая и LT":
-        ctx.set("type", msg.text)
-        await bot.state_dispenser.set(msg.peer_id, RegData.PHONE)
-        return about_contact
-    else:
-        await msg.answer("Выберите корректный параметр из выше представленных")
-
-
-@bot.on.private_message(state=RegData.PHONE)
-async def phone_handler(msg: Message):
-    pattern = '[-()]'
-    num = msg.text
-    num = (re.sub(pattern, '', num.replace('+7', '8')))
-    ctx.set("phone", num)
-    await bot.state_dispenser.set(msg.peer_id, RegData.USERNAME)
-    return "Как мы можем официально к Вам обращаться?"
-
-
-@bot.on.private_message(state=RegData.USERNAME)
-async def type_handler(msg: Message):
-    size = ctx.get("size")
-    brand = ctx.get("brand")
-    state = ctx.get("state")
-    season = ctx.get("season")
-    studded = ctx.get("studded")
-    typing = ctx.get("type")
-    number = ctx.get("phone")
-    name = msg.text
-
-    await msg.answer(f"Проверьте, верно ли Вы ввели все параметры:\n\n"
-                     f"🔤 Параметры шины: {size}\n\n"
-                     f"©️ Марка шины: {brand}\n\n"
-                     f"♻ Состояние: {state}\n\n"
-                     f"📆 Протектор (сезон): {season}\n\n"
-                     f"⚙ Шиповка: {studded}\n\n"
-                     f"🚜 Тип шины: {typing}\n\n"
-                     f"Ваше имя: {name}\n"
-                     f"Ваш номер: {number}")
-
-    await answer_keyboard(msg)
-    await check_handler(msg)
+    await msg.answer("📄 Оформление заявки\n\nВведите следущие параметры:\n\n"
+                     "Параметры шины в такой последовательности:\n\n"
+                     "1⃣ Ширина профиля\n2⃣ Высота профиля\n3⃣ Посадочный диаметр\n\n"
+                     "Пример сообщения:\n'225/45/R17'\n\n"
+                     
+                     "©️ Введите марку шины\n(по желанию)\n\n"
+                     "Пример:\n'Bridgestone' или 'BFGoodrich'\n\n"
+                     "Если нет определенного ответа, то напишите '-'"
+                     
+                     "Введите количество шин (по желанию)\n\n" 
+                     "Пример: '2' или '4'\n\n" 
+                     "Если нет определенного ответа, то отправьте '-'\n\n"
+                     
+                     "♻ Введите желаемое состояние товара:\n\n"
+                     "Пример: 'Новое' или 'Б/У'\n\n"
+                     
+                     "📆 Введите желаемый протектор (сезон):\n\n"
+                     "Пример: 'Летняя' 'Зимняя' 'Грязь АТ' 'Грязь МТ'\n\n"
+                     
+                     "⚙ В желаемый параметр шиповки")
 
 
 @bot.on.private_message(text=bad_words_list)
