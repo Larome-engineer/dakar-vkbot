@@ -1,10 +1,12 @@
+# .py файл для создания отдельных клавиатур
+
 from privacy import phone
 from useful_links import *
 from vkbottle.bot import Message
 from vkbottle import Keyboard, KeyboardButtonColor, Text, OpenLink
 
 
-async def options_keyboard(msg: Message):
+async def options_keyboard(msg: Message):  # Клавиатура для главного меню
     keyboard = (
         Keyboard(inline=True)
         .add(Text("Каталог"), KeyboardButtonColor.PRIMARY)
@@ -17,7 +19,7 @@ async def options_keyboard(msg: Message):
                      "Выберите нужную Вам опцию:", keyboard=keyboard)
 
 
-async def links_keyboard(msg: Message):
+async def links_keyboard(msg: Message):  # Клавиатура для торговых площадок
     keyboard = (
         Keyboard(inline=True)
         .add(OpenLink(platform_links.get("vk_market"), "Товары"))
@@ -28,7 +30,7 @@ async def links_keyboard(msg: Message):
     await msg.answer("📎 Ссылки 📎", keyboard=keyboard)
 
 
-async def create_route_keyboard(msg: Message):
+async def create_route_keyboard(msg: Message):  # Клавиатура для подтверждения перехода на маршрутные платформы
     keyboard = (
         Keyboard(inline=True)
         .add(Text("Да"), KeyboardButtonColor.POSITIVE)
@@ -38,7 +40,7 @@ async def create_route_keyboard(msg: Message):
     await msg.answer("Уточнить наше местоположение на карте? 📍", keyboard=keyboard)
 
 
-async def route_keyboard(msg: Message):
+async def route_keyboard(msg: Message):  # Клавиатура для перехода на маршрутные платформы
     keyboard = (
         Keyboard(inline=True)
         .add(OpenLink(route_links.get("YANDEX"), "Яндекс Карты")).row()
@@ -50,7 +52,7 @@ async def route_keyboard(msg: Message):
                      "Выберите удобную для Вас платформу", keyboard=keyboard)
 
 
-async def contacts_keyboard(msg: Message):
+async def contacts_keyboard(msg: Message):  # Клавиатура с ссылками на аккаунты и контактным номером телефона
     keyboard = (
         Keyboard(inline=True)
         .add(OpenLink(contact_links.get("whatsapp"), "WhatsApp")).row()
@@ -61,7 +63,7 @@ async def contacts_keyboard(msg: Message):
     await msg.answer(f"📲 Наши контакты\n\nТелефон: {phone}", keyboard=keyboard)
 
 
-async def answer_keyboard(msg: Message):
+async def answer_keyboard(msg: Message):  # Клавиатура для подтверждения корректности заявки клиента
     keyboard = (
         Keyboard(inline=True)
         .add(Text("Верно"), KeyboardButtonColor.POSITIVE)
@@ -70,8 +72,8 @@ async def answer_keyboard(msg: Message):
     await msg.answer("Все верно?", keyboard=keyboard)
 
 
-async def check_of_correct(msg: Message):
-    keyboard = (
+async def check_of_correct(msg: Message):  # Клавиатура для перехода к проверке корректности заявки.
+    keyboard = (                           # Является моим временным решением. Позже будет убрана
         Keyboard(inline=True)
         .add(Text("Проверить заявку"), KeyboardButtonColor.POSITIVE)
     )

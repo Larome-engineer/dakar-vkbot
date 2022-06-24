@@ -22,9 +22,10 @@ class RegData(BaseStateGroup):
     SEASON = 3
     STUDDED = 4
     TYPE = 5
-    PHONE = 6
-    USERNAME = 7
-    END = 8
+    NUM = 6
+    PHONE = 7
+    USERNAME = 8
+    END = 9
 
 
 @bot.on.private_message(text=["верно", "неверно"])
@@ -42,6 +43,7 @@ async def check_answer_of_order(msg: Message):   # Проверка на кор�
         ctx.delete("season")
         ctx.delete("studded")
         ctx.delete("type")
+        ctx.delete("num")
         ctx.delete("phone")
 
     elif msg.text == "Неверно":
@@ -55,6 +57,7 @@ async def check_answer_of_order(msg: Message):   # Проверка на кор�
         ctx.delete("season")
         ctx.delete("studded")
         ctx.delete("type")
+        ctx.delete("num")
         ctx.delete("phone")
 
         await msg.answer("Пожалуйста, заполните заявку заново", keyboard=keyboard)
@@ -70,8 +73,13 @@ async def greetings_handler(msg: Message):
 
 @bot.on.private_message(text=gratitude_list)
 async def gratitude_handler(msg: Message):
+    menu = (
+        Keyboard(inline=True)
+        .add(Text("Меню"), KeyboardButtonColor.PRIMARY)
+    )
     await msg.answer("Пожалуйста! Приезжайте к нам чаще!\n"
-                     "Всегда рады заботиться о ваших машинках!🔥")
+                     "Всегда рады заботиться о ваших машинках!🔥\n\n"
+                     "Можете перейти в раздел меню", keyboard=menu)
 
 
 @bot.on.private_message(text="Меню")
@@ -155,17 +163,32 @@ async def tire_std_handler(msg: Message):
         await bot.state_dispenser.set(msg.peer_id, RegData.TYPE)
         await tire_type_keyboard(msg)
     else:
-        await msg.answer("Выберите корректный параметр из выше представленных")
+        await msg.answer("Выберите корректный параметр из выше представленных.")
 
 
 @bot.on.private_message(state=RegData.TYPE)
 async def tire_type_handler(msg: Message):
     if msg.text == "Обычная" or msg.text == "Грузовая и LT":
         ctx.set("type", msg.text)
-        await bot.state_dispenser.set(msg.peer_id, RegData.PHONE)
-        return for_contact_input
+        await bot.state_dispenser.set(msg.peer_id, RegData.NUM)
+        num = (
+            Keyboard(inline=True)
+            .add(Text("1"), KeyboardButtonColor.PRIMARY)
+            .add(Text("2"), KeyboardButtonColor.PRIMARY).row()
+            .add(Text("3"), KeyboardButtonColor.PRIMARY)
+            .add(Text("4"), KeyboardButtonColor.PRIMARY)
+        )
+        await msg.answer("Выберите нужное количество шин", keyboard=num)
+
     else:
-        await msg.answer("Выберите корректный параметр из выше представленных")
+        await msg.answer("Выберите корректный параметр из выше представленных.")
+
+
+@bot.on.private_message(state=RegData.NUM)
+async def tire_num_handler(msg: Message):
+    ctx.set("num", msg.text)
+    await bot.state_dispenser.set(msg.peer_id, RegData.PHONE)
+    return for_contact_input
 
 
 @bot.on.private_message(state=RegData.PHONE)
@@ -192,16 +215,18 @@ async def end_order_handler(msg: Message):
     season = ctx.get("season")
     studded = ctx.get("studded")
     typing = ctx.get("type")
+    num = ctx.get("num")
     number = ctx.get("phone")
     name = msg.state_peer.payload["name"]
 
-    await msg.answer(f"📋 Ваша заявка\n\n"
-                     f"🔤 Параметры шины: {size}\n\n"
-                     f"©️ Марка шины: {brand}\n\n"
-                     f"♻ Состояние: {state}\n\n"
-                     f"📆 Протектор (сезон): {season}\n\n"
-                     f"⚙ Шиповка: {studded}\n\n"
-                     f"🚜 Тип шины: {typing}\n\n"
+    await msg.answer(f"📋 ВАША ЗАЯВКА\n\n"
+                     f"🔤 Параметры шины:\n>>>> {size}\n\n"
+                     f"©️ Марка шины:\n>>>> {brand}\n\n"
+                     f"♻ Состояние:\n>>>> {state}\n\n"
+                     f"📆 Протектор (сезон):\n>>>> {season}\n\n"
+                     f"⚙ Шиповка:\n>>>> {studded}\n\n"
+                     f"🚜 Тип шины:\n>>>> {typing}\n\n"
+                     f"🔢 Количество: {num}\n\n"
                      f"Ваше имя: {name}\n"
                      f"Ваш номер: {number}")
 
@@ -213,13 +238,13 @@ async def end_order_handler(msg: Message):
 async def bad_words_check(msg: Message):
     await msg.answer("Ну что же Вы так сразу... \n"
                      "Не выражайтесь! Мы ценим манеры ☝🏻\n\n"
-                     "Отправьте нам слово 'Привет' для начала диалога")
+                     "Отправьте нам слово 'Привет' для начала диалога или слово 'Меню' для перехода в главное меню.")
 
 
 @bot.on.private_message()
 async def confused(msg: Message):
     await msg.answer("Я Вас не понимаю.\nОтправьте слово 'Привет' для начала работы или 'Меню' "
-                     "для быстрого перехода в главное меню")
+                     "для быстрого перехода в главное меню.")
 
 
 @bot.on.raw_event(GroupEventType.GROUP_JOIN, dataclass=GroupTypes.GroupJoin)
@@ -228,7 +253,7 @@ async def group_join_handler(event: GroupTypes.GroupJoin):
         await bot.api.messages.send(
             peer_id=event.object.user_id,
             message="Благодарим за подписку! 🔥\n\nДля начала работы поздоровайтесь "
-                    "с нашим онлайн-консультантом, отправив сообщение: 'Привет'",
+                    "с нашим онлайн-консультантом, отправив сообщение: 'Привет'.",
             random_id=0
         )
     except VKAPIError[901]:

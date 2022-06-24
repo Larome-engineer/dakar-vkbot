@@ -1,4 +1,4 @@
-# .py файл для создания клавиатур и переменных под Стейты (Отправка заявки)
+# .py файл для создания клавиатур для Стейтов (Отправка заявки)
 
 from vkbottle.bot import Message
 from vkbottle import Keyboard, KeyboardButtonColor, Text

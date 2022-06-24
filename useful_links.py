@@ -1,4 +1,6 @@
-contact_links = {"whatsapp": "https://wa.me/9992219318",
+# Cловари, ключи которых объясняют суть ссылки
+
+contact_links = {"whatsapp": "https://wa.me/79992219318?text=Здравствуйте!%20Подскажите, пожалуйста, какие%20шины%20есть.",
                  "telegram": "https://t.me/ilyabizz",
                  "vk": "https://vk.com/zh.ryan"
                  }
