@@ -148,7 +148,12 @@ async def tire_state_handler(msg: Message):
 
 @bot.on.private_message(state=RegData.SEASON)
 async def tire_season_handler(msg: Message):
-    if msg.text == "Летняя" or msg.text == "Зимняя" or msg.text == "Грязь МТ" or msg.text == "Грязь АТ":
+    if msg.text == "Летняя":
+        ctx.set("season", msg.text)
+        await bot.state_dispenser.set(msg.peer_id, RegData.TYPE)
+        ctx.set("studded", "Без шипов")
+        await tire_type_keyboard(msg)
+    elif msg.text == "Зимняя" or msg.text == "Грязь МТ" or msg.text == "Грязь АТ":
         ctx.set("season", msg.text)
         await bot.state_dispenser.set(msg.peer_id, RegData.STUDDED)
         await tire_studding_keyboard(msg)
