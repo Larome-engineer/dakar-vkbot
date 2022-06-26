@@ -67,7 +67,9 @@ async def answer_keyboard(msg: Message):  # Клавиатура для подт
     keyboard = (
         Keyboard(inline=True)
         .add(Text("Верно"), KeyboardButtonColor.POSITIVE)
-        .add(Text("Неверно"), KeyboardButtonColor.NEGATIVE)
+        .add(Text("Неверно"), KeyboardButtonColor.NEGATIVE).row()
+        .add(Text("Меню"), KeyboardButtonColor.PRIMARY)
+
     )
     await msg.answer("Все верно?", keyboard=keyboard)
 

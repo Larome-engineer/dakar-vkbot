@@ -8,11 +8,27 @@ from var_for_states_func import *
 
 from vkbottle.bot import Bot
 from vkbottle import BaseStateGroup
-from vkbottle import GroupTypes, GroupEventType, VKAPIError, CtxStorage
+from vkbottle import GroupTypes, GroupEventType, VKAPIError
 
-ctx = CtxStorage()
+user_dict = {}
+order_dict = []
+
 bot = Bot(token=token)
 bot.labeler.vbml_ignore_case = True
+
+
+class User:
+
+    def __init__(self, size):
+        self.size = size
+
+        keys = [
+            'size', 'brand', 'state', 'season', 'studded',
+            'type', 'tire_number', 'number'
+        ]
+
+        for key in keys:
+            self.key = None
 
 
 class RegData(BaseStateGroup):
@@ -37,29 +53,13 @@ async def check_answer_of_order(msg: Message):   # Проверка на кор�
         )
         await msg.answer("✅ Отлично. Ваша заявка обработана. Через некоторое время мы Вам перезвоним!\n\n"
                          "Нажмите 'Меню', чтобы вернуться в главное меню", keyboard=menu)
-        ctx.delete("size")
-        ctx.delete("brand")
-        ctx.delete("state")
-        ctx.delete("season")
-        ctx.delete("studded")
-        ctx.delete("type")
-        ctx.delete("num")
-        ctx.delete("phone")
 
     elif msg.text == "Неверно":
         keyboard = (
             Keyboard(inline=True)
             .add(Text("Переоформить заявку"), KeyboardButtonColor.POSITIVE)
         )
-        ctx.delete("size")
-        ctx.delete("brand")
-        ctx.delete("state")
-        ctx.delete("season")
-        ctx.delete("studded")
-        ctx.delete("type")
-        ctx.delete("num")
-        ctx.delete("phone")
-
+        order_dict.pop(-1)
         await msg.answer("Пожалуйста, заполните заявку заново", keyboard=keyboard)
 
 
@@ -124,14 +124,18 @@ async def start_order_handler(msg: Message):
 
 @bot.on.private_message(state=RegData.SIZE)
 async def tire_size_handler(msg: Message):
-    ctx.set("size", msg.text)
+    user = user_dict[msg.from_id] = User(msg.text)
+    user.size = msg.text
+
     await bot.state_dispenser.set(msg.peer_id, RegData.BRAND)
     return for_brand_input
 
 
 @bot.on.private_message(state=RegData.BRAND)
 async def tire_brand_handler(msg: Message):
-    ctx.set("brand", msg.text)
+    user = user_dict[msg.from_id]
+    user.brand = msg.text
+
     await bot.state_dispenser.set(msg.peer_id, RegData.STATE)
     await bus_condition_keyboard(msg)
 
@@ -139,7 +143,9 @@ async def tire_brand_handler(msg: Message):
 @bot.on.private_message(state=RegData.STATE)
 async def tire_state_handler(msg: Message):
     if msg.text == "Б/У" or msg.text == "Новое":
-        ctx.set("state", msg.text)
+        user = user_dict[msg.from_id]
+        user.state = msg.text
+
         await bot.state_dispenser.set(msg.peer_id, RegData.SEASON)
         await tire_season_keyboard(msg)
     else:
@@ -149,12 +155,17 @@ async def tire_state_handler(msg: Message):
 @bot.on.private_message(state=RegData.SEASON)
 async def tire_season_handler(msg: Message):
     if msg.text == "Летняя":
-        ctx.set("season", msg.text)
+        user = user_dict[msg.from_id]
+        user.season = msg.text
+
         await bot.state_dispenser.set(msg.peer_id, RegData.TYPE)
-        ctx.set("studded", "Без шипов")
+        user.studded = "Без шипов"
+
         await tire_type_keyboard(msg)
     elif msg.text == "Зимняя" or msg.text == "Грязь МТ" or msg.text == "Грязь АТ":
-        ctx.set("season", msg.text)
+        user = user_dict[msg.from_id]
+        user.season = msg.text
+
         await bot.state_dispenser.set(msg.peer_id, RegData.STUDDED)
         await tire_studding_keyboard(msg)
     else:
@@ -164,7 +175,9 @@ async def tire_season_handler(msg: Message):
 @bot.on.private_message(state=RegData.STUDDED)
 async def tire_std_handler(msg: Message):
     if msg.text == "Шипы" or msg.text == "Без шипов":
-        ctx.set("studded", msg.text)
+        user = user_dict[msg.from_id]
+        user.studded = msg.text
+
         await bot.state_dispenser.set(msg.peer_id, RegData.TYPE)
         await tire_type_keyboard(msg)
     else:
@@ -174,7 +187,9 @@ async def tire_std_handler(msg: Message):
 @bot.on.private_message(state=RegData.TYPE)
 async def tire_type_handler(msg: Message):
     if msg.text == "Обычная" or msg.text == "Грузовая и LT":
-        ctx.set("type", msg.text)
+        user = user_dict[msg.from_id]
+        user.type = msg.text
+
         await bot.state_dispenser.set(msg.peer_id, RegData.NUM)
         num = (
             Keyboard(inline=True)
@@ -191,7 +206,9 @@ async def tire_type_handler(msg: Message):
 
 @bot.on.private_message(state=RegData.NUM)
 async def tire_num_handler(msg: Message):
-    ctx.set("num", msg.text)
+    user = user_dict[msg.from_id]
+    user.tire_number = msg.text
+
     await bot.state_dispenser.set(msg.peer_id, RegData.PHONE)
     return for_contact_input
 
@@ -201,39 +218,52 @@ async def client_phone_handler(msg: Message):
     pattern = '[-()]'
     num = msg.text
     num = (re.sub(pattern, '', num.replace('+7', '8')))
-    ctx.set("phone", num)
+
+    user = user_dict[msg.from_id]
+    user.number = num
+
     await bot.state_dispenser.set(msg.peer_id, RegData.USERNAME)
     return "Как мы можем официально к Вам обращаться?"
 
 
 @bot.on.private_message(state=RegData.USERNAME)
 async def client_name_handler(msg: Message):
-    await bot.state_dispenser.set(msg.peer_id, RegData.END, name=msg.text)
+    chat_id = msg.from_id
+    user = user_dict[chat_id]
+    user.name = msg.text
+
+    await bot.state_dispenser.set(msg.peer_id, RegData.END)
     await check_of_correct(msg)
 
 
 @bot.on.private_message(state=RegData.END, text="Проверить заявку")
-async def end_order_handler(msg: Message):
-    size = ctx.get("size")
-    brand = ctx.get("brand")
-    state = ctx.get("state")
-    season = ctx.get("season")
-    studded = ctx.get("studded")
-    typing = ctx.get("type")
-    num = ctx.get("num")
-    number = ctx.get("phone")
-    name = msg.state_peer.payload["name"]
+async def client_name_handler(msg: Message):
+    chat_id = msg.from_id
+    user = user_dict[chat_id]
 
-    await msg.answer(f"📋 ВАША ЗАЯВКА\n\n"
-                     f"🔤 Параметры шины:\n>>>> {size}\n\n"
-                     f"©️ Марка шины:\n>>>> {brand}\n\n"
-                     f"♻ Состояние:\n>>>> {state}\n\n"
-                     f"📆 Протектор (сезон):\n>>>> {season}\n\n"
-                     f"⚙ Шиповка:\n>>>> {studded}\n\n"
-                     f"🚜 Тип шины:\n>>>> {typing}\n\n"
-                     f"🔢 Количество: {num}\n\n"
-                     f"Ваше имя: {name}\n"
-                     f"Ваш номер: {number}")
+    size = user.size
+    brand = user.brand
+    state = user.state
+    season = user.season
+    std = user.studded
+    types = user.type
+    tire_number = user.tire_number
+    name = user.name
+    number = user.number
+
+    message = "🔤 Параметры шины:\n>>>> " + size + "\n\n"\
+              "©️ Марка шины:\n>>>> " + brand + "\n\n"\
+              "♻ Состояние:\n>>>> " + state + "\n\n"\
+              "📆 Протектор (сезон):\n>>>> " + season + "\n\n"\
+              "⚙ Шиповка:\n>>>> " + std + "\n\n"\
+              "🚜 Тип шины:\n>>>> " + types + "\n\n"\
+              "🔢 Количество: " + tire_number + "\n\n"\
+              "Ваше имя: " + name + "\n"\
+              "Ваш номер: " + number
+
+    order_dict.append(message)
+
+    await msg.answer("📋 ВАША ЗАЯВКА\n\n" + message)
 
     await answer_keyboard(msg)
     await check_answer_of_order(msg)
@@ -244,6 +274,23 @@ async def bad_words_check(msg: Message):
     await msg.answer("Ну что же Вы так сразу... \n"
                      "Не выражайтесь! Мы ценим манеры ☝🏻\n\n"
                      "Отправьте нам слово 'Привет' для начала диалога или слово 'Меню' для перехода в главное меню.")
+
+
+@bot.on.chat_message(text="/check")
+async def chat_check_handler(msg: Message):
+    i = 0
+    if order_dict:
+        for m in order_dict:
+            i += 1
+            await msg.answer(f"📋 ЗАЯВКА: {i}\n\n" + m)
+    else:
+        await msg.answer("Нет новых заявок")
+
+
+@bot.on.chat_message(text="/delete")
+async def chat_delete_handler(msg: Message):
+    order_dict.clear()
+    await msg.answer("Все заявки удалены")
 
 
 @bot.on.private_message()
